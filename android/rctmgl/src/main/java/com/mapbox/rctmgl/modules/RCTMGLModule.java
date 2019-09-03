@@ -45,7 +45,7 @@ public class RCTMGLModule extends ReactContextBaseJavaModule {
     public static final String REACT_CLASS = "RCTMGLModule";
 
     private static boolean customHeaderInterceptorAdded = false;
-	private static boolean useOkHttpClientProvider = false;
+	private static boolean isUsingOkHttpClientProvider = false;
 
     private Handler mUiThreadHandler;
     private ReactApplicationContext mReactContext;
@@ -300,15 +300,16 @@ public class RCTMGLModule extends ReactContextBaseJavaModule {
 
 	
 	@ReactMethod
-    public void enableOkHttpClientProvider() {
+    public void setUseOkHttpClientProvider(final Boolean enable) {
         mReactContext.runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-				if (!useOkHttpClientProvider) {
+				if (!isUsingOkHttpClientProvider && enable) {
 					OkHttpClient httpClient = OkHttpClientProvider.getOkHttpClient();
                     HttpRequestUtil.setOkHttpClient(httpClient);
                     useOkHttpClientProvider = true;
-				}               
+				}
+				isUsingOkHttpClientProvider = enable;
             }
         });
     }
@@ -329,7 +330,7 @@ public class RCTMGLModule extends ReactContextBaseJavaModule {
         mReactContext.runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-                if (!customHeaderInterceptorAdded && !useOkHttpClientProvider) {
+                if (!customHeaderInterceptorAdded && !isUsingOkHttpClientProvider) {
                     Log.i("header", "Add interceptor");
                     OkHttpClient httpClient = new OkHttpClient.Builder()
                             .addInterceptor(CustomHeadersInterceptor.INSTANCE).dispatcher(getDispatcher()).build();
