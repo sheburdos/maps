@@ -11,6 +11,8 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.module.annotations.ReactModule;
+import com.facebook.react.modules.network.OkHttpClientProvider;
+
 import com.mapbox.mapboxsdk.maps.TelemetryDefinition;
 import com.mapbox.mapboxsdk.Mapbox;
 // import com.mapbox.mapboxsdk.constants.Style;
@@ -43,6 +45,7 @@ public class RCTMGLModule extends ReactContextBaseJavaModule {
     public static final String REACT_CLASS = "RCTMGLModule";
 
     private static boolean customHeaderInterceptorAdded = false;
+	private static boolean useOkHttpClientProvider = false;
 
     private Handler mUiThreadHandler;
     private ReactApplicationContext mReactContext;
@@ -284,12 +287,28 @@ public class RCTMGLModule extends ReactContextBaseJavaModule {
                 .build();
     }
 
+
     @ReactMethod
     public void setAccessToken(final String accessToken) {
         mReactContext.runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
                 Mapbox.getInstance(getReactApplicationContext(), accessToken);
+            }
+        });
+    }
+
+	
+	@ReactMethod
+    public void enableOkHttpClientProvider() {
+        mReactContext.runOnUiQueueThread(new Runnable() {
+            @Override
+            public void run() {
+				if (!useOkHttpClientProvider) {
+					OkHttpClient httpClient = OkHttpClientProvider.getOkHttpClient();
+                    HttpRequestUtil.setOkHttpClient(httpClient);
+                    useOkHttpClientProvider = true;
+				}               
             }
         });
     }
@@ -310,7 +329,7 @@ public class RCTMGLModule extends ReactContextBaseJavaModule {
         mReactContext.runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-                if (!customHeaderInterceptorAdded) {
+                if (!customHeaderInterceptorAdded && !useOkHttpClientProvider) {
                     Log.i("header", "Add interceptor");
                     OkHttpClient httpClient = new OkHttpClient.Builder()
                             .addInterceptor(CustomHeadersInterceptor.INSTANCE).dispatcher(getDispatcher()).build();
